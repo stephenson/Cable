@@ -14,7 +14,7 @@ concurrency:
 jobs:
   release:
     if: ${{ !github.event.release.prerelease }}
-    runs-on: macos-15
+    runs-on: macos-26
     environment: release
     timeout-minutes: 60
     steps:
@@ -26,6 +26,8 @@ jobs:
         id: python
         with:
           python-version: '3.12'
+      - name: Configure UI test display
+        run: swift .github/scripts/configure-display.swift
       - name: Build and publish
         env:
           GH_TOKEN: ${{ github.token }}
