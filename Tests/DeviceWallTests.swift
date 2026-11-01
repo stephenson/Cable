@@ -24,6 +24,13 @@ struct DeviceWallTests {
                        AndroidDevice(serial: "B", authorized: true, name: "Second")]
         let portrait = sample(configuration: "AAAAAWdCwAvaGFbARAAAAwAEAAADAMo8UKqAAAAAAWjOD8g=", frame: "AAABZYiEOhGKAAIRccAAQDI4AAg0ycnJycnXXXXXXXXXXXXXXXXXXXXXXXXgAAABZQ+IhDoRigACEXHAAEAyOAAINMnJycnJ1111111111111111111111114A==")
         let landscape = sample(configuration: "AAAAAWdCwAvaCjbARAAAAwAEAAADAMo8UKqAAAAAAWjOD8g=", frame: "AAABZYiEOhGKAAISkcAAQs44AAguScnJycnJycnJ111111111111111111111111111111111111111111111111114=")
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: ContentView(capture: capture))
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        await settle()
+        let welcomeSize = window.contentLayoutRect.size
         android.onDevices?(sources)
         await settle()
         android.onEvent?("A", .frame(portrait))
@@ -31,12 +38,6 @@ struct DeviceWallTests {
         await settle()
         let first = capture.devices[0]
         let second = capture.devices[1]
-        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: ContentView(capture: capture))
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        await settle()
         precondition(first.videoLayer.frame.height > first.videoLayer.frame.width)
         precondition(abs(first.videoLayer.frame.width - second.videoLayer.frame.width) < 2)
 
@@ -79,7 +80,7 @@ struct DeviceWallTests {
         precondition(capture.devices[0] === second && second.videoLayer.superlayer != nil)
         android.onDevices?([])
         await settle()
-        precondition(abs(window.contentLayoutRect.width - 420) < 2 && abs(window.contentLayoutRect.height - 700) < 2)
+        precondition(abs(window.contentLayoutRect.width - welcomeSize.width) < 2 && abs(window.contentLayoutRect.height - welcomeSize.height) < 2, "Disconnect must restore the screen-fitted welcome size")
         capture.stop()
         window.close()
         print("PASS: rendered device wall rotates one phone, preserves its peer, and restores welcome after disconnect")

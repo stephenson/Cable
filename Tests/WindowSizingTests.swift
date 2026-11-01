@@ -52,6 +52,10 @@ struct WindowSizingTests {
             precondition(abs(window.contentAspectRatio.width / window.contentAspectRatio.height - expected.width / expected.height) < 0.00001, "Manual resizing is not aspect locked to the padded frame")
         }
 
+        settle()
+        let welcomeSize = contentSize()
+        precondition(abs(welcomeSize.width / welcomeSize.height - 0.6) < 0.01, "Welcome must retain its proportions when fitted to the screen")
+
         show(CGSize(width: 1170, height: 2532))
         settle()
         checkFit(width: 1170, height: 2532)
@@ -100,7 +104,9 @@ struct WindowSizingTests {
         let beforeAdding = contentSize()
         preview.update(canvas: combined, deviceCount: 2)
         settle()
-        precondition(abs(contentSize().height - beforeAdding.height) < 2, "Adding a device should preserve row height when space permits")
+        let availableWidth = window.contentRect(forFrameRect: window.screen!.visibleFrame.insetBy(dx: 16, dy: 16)).width
+        let expectedHeight = min(beforeAdding.height, availableWidth * combined.height / combined.width)
+        precondition(abs(contentSize().height - expectedHeight) < 2, "Adding a device must preserve row height unless the screen width requires shrinking")
         checkFit(width: combined.width, height: combined.height, canvas: combined)
         let unchanged = contentSize()
         preview.update(canvas: combined, deviceCount: 2)
@@ -114,7 +120,7 @@ struct WindowSizingTests {
         show(nil)
         settle()
         precondition(window.contentAspectRatio == .zero, "Disconnect left the window aspect locked")
-        precondition(abs(contentSize().width - 420) < 2 && abs(contentSize().height - 700) < 2, "Disconnect did not restore the welcome size")
+        precondition(abs(contentSize().width - welcomeSize.width) < 2 && abs(contentSize().height - welcomeSize.height) < 2, "Disconnect did not restore the screen-fitted welcome size")
         window.close()
         print("PASS: single and multiple device sizing, rotation, manual resize, display bounds, Duo folding, and disconnect")
     }
