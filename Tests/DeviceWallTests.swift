@@ -4,22 +4,29 @@ import SwiftUI
 @testable import CableTests
 
 @main
-struct DeviceWallTests {
-    static func main() {
-        NSApplication.shared.setActivationPolicy(.regular)
-        Task { @MainActor in
-            await runTests()
-            NSApp.terminate(nil)
-        }
-        NSApp.run()
+struct DeviceWallTests: App {
+    private let android: AndroidCapture
+    private let capture: Capture
+    private let suite = "CableWallTests.\(UUID().uuidString)"
+
+    init() {
+        android = AndroidCapture()
+        capture = Capture(android: android, preferences: UserDefaults(suiteName: suite)!)
     }
 
-    @MainActor static func runTests() async {
-        let android = AndroidCapture()
-        let suite = "CableWallTests.\(UUID().uuidString)"
-        let preferences = UserDefaults(suiteName: suite)!
-        defer { preferences.removePersistentDomain(forName: suite) }
-        let capture = Capture(android: android, preferences: preferences)
+    var body: some Scene {
+        Window("Device wall test", id: "test") {
+            ContentView(capture: capture)
+                .task {
+                    await Self.runTests(android: android, capture: capture, suite: suite)
+                    NSApp.terminate(nil)
+                }
+        }
+        .defaultSize(width: 700, height: 700)
+    }
+
+    @MainActor static func runTests(android: AndroidCapture, capture: Capture, suite: String) async {
+        defer { UserDefaults(suiteName: suite)!.removePersistentDomain(forName: suite) }
         let sources = [AndroidDevice(serial: "A", authorized: true, name: "First"),
                        AndroidDevice(serial: "B", authorized: true, name: "Second")]
         let portrait = sample(configuration: "AAAAAWdCwAvaGFbARAAAAwAEAAADAMo8UKqAAAAAAWjOD8g=", frame: "AAABZYiEOhGKAAIRccAAQDI4AAg0ycnJycnXXXXXXXXXXXXXXXXXXXXXXXXgAAABZQ+IhDoRigACEXHAAEAyOAAINMnJycnJ1111111111111111111111114A==")
@@ -31,9 +38,7 @@ struct DeviceWallTests {
         await settle()
         let first = capture.devices[0]
         let second = capture.devices[1]
-        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: ContentView(capture: capture))
+        let window = NSApp.windows.first { $0.styleMask.contains(.titled) }!
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         await settle()

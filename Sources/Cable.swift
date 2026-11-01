@@ -302,10 +302,7 @@ struct DeviceName: View {
                     .accessibilityLabel("Device name for \(device.name)")
                     .onSubmit { save() }
                     .onExitCommand { editing = false }
-                    .task {
-                        do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
-                        focused = true
-                    }
+                    .task { focused = true }
             } else {
                 Button {
                     draft = device.displayName
