@@ -45,8 +45,13 @@ struct DeviceWallTests {
         let point = NSPoint(x: window.contentLayoutRect.width / 4, y: 18)
         let down = NSEvent.mouseEvent(with: .leftMouseDown, location: point, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
         let up = NSEvent.mouseEvent(with: .leftMouseUp, location: point, modifierFlags: [], timestamp: 0.1, windowNumber: window.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: 0)!
+        print("Rename test: active=\(NSApp.isActive), key=\(window.isKeyWindow), content=\(window.contentLayoutRect), point=\(point), hit=\(String(describing: window.contentView?.hitTest(point)))")
         NSApp.postEvent(up, atStart: false)
         window.sendEvent(down)
+        for _ in 0..<20 {
+            if window.firstResponder is NSTextView { break }
+            await settle()
+        }
         await settle()
         guard let editor = window.firstResponder as? NSTextView else {
             preconditionFailure("Clicking a device name must focus its text editor")
