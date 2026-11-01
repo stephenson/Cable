@@ -26,6 +26,8 @@ jobs:
         id: python
         with:
           python-version: '3.12'
+      - name: Configure UI test display
+        run: swift .github/scripts/configure-display.swift
       - name: Build and publish
         env:
           GH_TOKEN: ${{ github.token }}
