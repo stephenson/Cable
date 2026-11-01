@@ -32,6 +32,12 @@ The window automatically fits the entire padded row when streams become availabl
 
 Local builds are ad-hoc signed, not notarized. macOS may block a downloaded copy. After trying to open it, go to **System Settings → Privacy & Security → Open Anyway**, then confirm. Only do this for a build you trust. A notarized release avoids this extra step.
 
+### Updates
+
+Cable uses Sparkle’s standard update prompts. Automatic update checks are opt-in through Sparkle’s permission prompt; you can always use **Cable → Check for Updates…** manually. Updates are signed, downloaded over HTTPS, and installed by Sparkle rather than a custom updater.
+
+Version 1.2.1 has no updater. Install an updater-enabled release manually once; subsequent versions can update in the app. Source, official downloads, and the update feed live in the public [`stephenson/Cable`](https://github.com/stephenson/Cable/releases) repository. Updates become available after the release workflow succeeds, not immediately when a release is published.
+
 ## If the screen doesn’t appear
 
 Use a data-capable cable, unlock the iPhone, and accept its Trust prompt. Try another USB port or cable. Quit other apps using the iPhone’s capture feed. Check **System Settings → Privacy & Security → Camera** for Cable, then use **Try Again** if shown. The Help menu has these instructions too.
@@ -47,6 +53,34 @@ The installer opens with a Retina-resolution Cable background, positioned app an
 The build verifies that the signed app includes the camera and audio-input entitlements required by Hardened Runtime for the iPhone’s combined capture device. Without the camera entitlement, macOS rejects permission requests without showing a prompt. Run `bash test.sh` to check an existing build.
 
 For distribution, supply a Developer ID Application identity through `CODE_SIGN_IDENTITY` and a preconfigured `notarytool` keychain profile through `NOTARY_PROFILE`. The build then notarizes and staples the app before packaging. Apple Developer membership and valid signing credentials are required. Without them, the build remains ad-hoc signed.
+
+## Publishing releases
+
+Release setup:
+
+1. Keep `stephenson/Cable` public so Sparkle can download release assets without credentials. No separate update repository or personal access token is needed; CI uses the repository’s `GITHUB_TOKEN` with Contents write permission.
+2. The Sparkle EdDSA key is already configured: its public key is committed as `SUPublicEDKey` in `Info.plist`, and `SPARKLE_PRIVATE_KEY` is a repository secret. Back up the existing private key securely; do not generate a replacement for ordinary releases. If another export is needed, use `build/.sparkle/bin/generate_keys --account inc.phone.cable -x /secure/path/key`. Keep the same key across releases and never commit the private key.
+3. Confirm `SUFeedURL` is `https://raw.githubusercontent.com/stephenson/Cable/updates/appcast.xml`.
+4. The **release** GitHub environment is already created. Add the Apple signing secrets below there; required reviewer approval and deployment tag restrictions are recommended. The existing repository-level `SPARKLE_PRIVATE_KEY` secret is available to the workflow; avoid adding an environment secret of the same name unless it contains the same key.
+
+| Secret | Value |
+| --- | --- |
+| `CERTIFICATE_P12` | Base64-encoded P12 containing the Developer ID Application certificate and private key. On macOS: `base64 -i certificate.p12 \| pbcopy`. |
+| `CERTIFICATE_PASSWORD` | Password protecting the P12. |
+| `APPLE_ID` | Apple account authorized to notarize. |
+| `APPLE_TEAM_ID` | Developer team ID matching the signing certificate. |
+| `APPLE_APP_PASSWORD` | Apple app-specific password for notarization. |
+| `SPARKLE_PRIVATE_KEY` | Already configured repository secret containing the existing exported Sparkle private key, matching the bundled public key. |
+
+To publish, commit the finished changes, tag that commit with a stable version such as `v1.2.2`, push the tag, and publish its GitHub release in `stephenson/Cable`. Creating a draft alone does not build anything; prereleases are skipped. No push or pull-request builds are configured.
+
+The release workflow checks out the exact tag and validates the tag and required secrets before building. Both `VERSION` and `BUILD_NUMBER` are set to the tag without `v` (for example, `1.2.2`), so retries and workflow run ordering do not change update ordering. The old `1.2.1` build number `11` is not part of an existing Sparkle update channel; those installations require the manual install described above.
+
+CI uses Python 3.12, imports the certificate into a temporary dedicated keychain, configures notarization, builds and notarizes the app, and generates a signed ZIP appcast with Sparkle 2.10.1’s `generate_appcast`, with delta updates disabled. It uploads `Cable.dmg`, `Cable.zip`, and `appcast.xml` to the triggering release, then updates the stable feed on the `updates` branch last using GitHub’s Contents API and the existing file’s SHA for optimistic concurrency. There is no mirror repository, personal access token, external hosting, deployment action, or manual feed-publishing step.
+
+The stable raw feed URL does not follow GitHub’s latest-release pointer. Publishing a release starts CI; the existing feed keeps serving the previous working update while CI builds, uploads, and verifies the new assets. Only after those steps succeed does CI commit the new appcast to `updates`. A failed build or upload leaves the old feed working. On the first successful release, CI creates `updates` from the current `main` ref if needed, then adds the feed; before that first publication there is no feed yet. CI never modifies `main`, and no workflow runs on updates-branch pushes.
+
+Retries reuse existing assets and verify the ZIP’s Sparkle signature, feed version, URL, and size. Only missing assets are uploaded; published assets are never overwritten. Partial archive uploads can resume, but a release with an appcast and missing archives is rejected. A run refuses to proceed if a higher stable version has already been published or the `updates` feed advertises a higher version. An equal feed version is allowed only when its bytes match the verified release appcast; an already published identical feed is a no-op. Concurrent feed changes cause the Contents API write to fail rather than overwrite a newer feed; retry after reviewing the conflict. Only HTTP 404 is treated as an absent branch or feed; other API failures stop publication. Release runs are serialized; do not publish or edit releases or the feed manually while CI is running. Correct an already published bad artifact with a higher version instead of moving tags or rolling the feed back.
 
 ## Implementation
 

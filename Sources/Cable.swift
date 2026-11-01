@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 struct CableApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var capture = Capture()
+    @StateObject private var updater = Updater()
 
     var body: some Scene {
         Window("Cable", id: "viewer") {
@@ -22,6 +23,10 @@ struct CableApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About Cable") { showAboutCable() }
+            }
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
             }
             CommandGroup(replacing: .newItem) {}
             CommandGroup(replacing: .help) {
