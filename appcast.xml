@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Cable</title>
+        <item>
+            <title>1.2.4</title>
+            <pubDate>Sun, 01 Nov 2026 14:19:29 +0000</pubDate>
+            <sparkle:version>1.2.4</sparkle:version>
+            <sparkle:shortVersionString>1.2.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/stephenson/Cable/releases/download/v1.2.4/Cable.zip" length="10447388" type="application/octet-stream" sparkle:edSignature="ZI7tTXZrDNXN7spmMhfD42Fha9op68SIXn5aauiWDfHrULpnBFSIphNtV8nm+rIQI6VFc7kKJ14LE8n0KSbgDQ=="/>
+        </item>
+    </channel>
+</rss>
