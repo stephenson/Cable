@@ -79,7 +79,7 @@ struct DeviceWallTests {
         precondition(capture.devices[0] === second && second.videoLayer.superlayer != nil)
         android.onDevices?([])
         await settle()
-        precondition(abs(window.contentLayoutRect.width - 420) < 2 && abs(window.contentLayoutRect.height - 700) < 2)
+        precondition(abs(window.contentLayoutRect.width - 420) < 2 && abs(window.contentLayoutRect.height - 700) < 2, "Unexpected welcome size: \(window.contentLayoutRect.size), screen: \(String(describing: window.screen?.frame))")
         capture.stop()
         window.close()
         print("PASS: rendered device wall rotates one phone, preserves its peer, and restores welcome after disconnect")
