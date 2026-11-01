@@ -34,6 +34,7 @@ struct DeviceWallTests {
         let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: ContentView(capture: capture))
+        NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         await settle()
         precondition(first.videoLayer.frame.height > first.videoLayer.frame.width)
@@ -47,7 +48,9 @@ struct DeviceWallTests {
         NSApp.postEvent(up, atStart: false)
         window.sendEvent(down)
         await settle()
-        let editor = window.firstResponder as! NSTextView
+        guard let editor = window.firstResponder as? NSTextView else {
+            preconditionFailure("Clicking a device name must focus its text editor")
+        }
         editor.selectAll(nil)
         editor.insertText("Front desk", replacementRange: editor.selectedRange())
         window.sendEvent(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36)!)
