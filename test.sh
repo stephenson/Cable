@@ -43,8 +43,17 @@ xcrun swiftc -swift-version 5 -parse-as-library -emit-library -emit-module -enab
     -module-name CableTests "$ROOT"/Sources/*.swift -emit-module-path "$TEMP/CableTests.swiftmodule" \
     -o "$TEMP/libCableTests.dylib"
 for TEST in "$ROOT"/Tests/*.swift; do
+    EXECUTABLE="$TEMP/test"
+    if [[ "$(basename "$TEST")" == DeviceWallTests.swift ]]; then
+        BUNDLE="$TEMP/DeviceWallTests.app"
+        mkdir -p "$BUNDLE/Contents/MacOS"
+        /usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string inc.phone.cable.tests.wall' "$BUNDLE/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Add :CFBundleExecutable string test' "$BUNDLE/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Add :CFBundlePackageType string APPL' "$BUNDLE/Contents/Info.plist"
+        EXECUTABLE="$BUNDLE/Contents/MacOS/test"
+    fi
     xcrun swiftc -swift-version 5 -parse-as-library -I "$TEMP" -L "$TEMP" -lCableTests \
         -F "$FRAMEWORKS" -framework Sparkle -Xlinker -rpath -Xlinker "$FRAMEWORKS" \
-        -Xlinker -rpath -Xlinker "$TEMP" "$TEST" -o "$TEMP/test"
-    "$TEMP/test"
+        -Xlinker -rpath -Xlinker "$TEMP" "$TEST" -o "$EXECUTABLE"
+    "$EXECUTABLE"
 done
