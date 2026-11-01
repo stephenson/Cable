@@ -4,6 +4,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="${1:-$ROOT/build/Cable.app}"
 TEMP="$(mktemp -d)"
 trap 'rm -rf "$TEMP"' EXIT
+bash "$ROOT/Tests/AndroidDependencies.sh" "${2:-$ROOT/build/.android-tools}"
 codesign --verify --deep --strict "$APP"
 FRAMEWORKS="$APP/Contents/Frameworks"
 test -d "$FRAMEWORKS/Sparkle.framework"

@@ -13,10 +13,13 @@ final class AndroidCapture {
     var onDevices: (([AndroidDevice]) -> Void)?
     var onEvent: ((String, Event) -> Void)?
     private let queue = DispatchQueue(label: "inc.phone.cable.android")
+    private let discoveryQueue = DispatchQueue(label: "inc.phone.cable.android.discovery")
     private let bridge: AndroidBridge
     private var timer: DispatchSourceTimer?
     private var streams: [String: AndroidStream] = [:]
     private var devices: [AndroidDevice] = []
+    private var generation = UUID()
+    private var refreshing = false
 
     init(resources: URL = Bundle.main.resourceURL!) {
         bridge = AndroidBridge(resources: resources)
@@ -25,6 +28,7 @@ final class AndroidCapture {
     func start() {
         queue.async { [self] in
             guard timer == nil else { return }
+            generation = UUID()
             let timer = DispatchSource.makeTimerSource(queue: queue)
             timer.schedule(deadline: .now(), repeating: 2)
             timer.setEventHandler { [weak self] in self?.refresh() }
@@ -41,18 +45,38 @@ final class AndroidCapture {
         }
     }
 
-    func stop() {
-        queue.sync {
+    func stop(completion: @escaping () -> Void = {}) {
+        queue.async { [self] in
             timer?.cancel()
             timer = nil
-            streams.values.forEach { $0.stop(wait: true) }
+            generation = UUID()
+            refreshing = false
+            let stopped = DispatchGroup()
+            for stream in streams.values {
+                stopped.enter()
+                stream.stop { stopped.leave() }
+            }
             streams.removeAll()
             devices = []
+            stopped.notify(queue: .main, execute: completion)
         }
     }
 
     private func refresh() {
-        guard let output = bridge.command(["devices", "-l"]) else { return }
+        guard timer != nil, !refreshing else { return }
+        refreshing = true
+        let token = generation
+        discoveryQueue.async { [weak self, bridge] in
+            let output = bridge.command(["devices", "-l"])
+            self?.queue.async { [weak self] in
+                guard let self, self.generation == token else { return }
+                self.refreshing = false
+                if let output { self.refreshDevices(output) }
+            }
+        }
+    }
+
+    private func refreshDevices(_ output: String) {
         let connected = AndroidDevice.connectedUSBDevices(in: output)
         if devices != connected {
             devices = connected
@@ -129,12 +153,12 @@ private final class AndroidStream {
         }
     }
 
-    func stop(wait: Bool = false) {
-        let stop = { [self] in
+    func stop(completion: @escaping () -> Void = {}) {
+        queue.async { [self] in
             stopped = true
             disconnect()
+            completion()
         }
-        if wait { queue.sync(execute: stop) } else { queue.async(execute: stop) }
     }
 
     private func status(_ key: String, _ event: AndroidCapture.Event) {

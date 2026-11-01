@@ -20,6 +20,7 @@ final class Capture: ObservableObject {
     @Published private(set) var requestingPermission = false
     private let android: AndroidCapture
     private let preferences: UserDefaults
+    private let authorizationStatus: () -> AVAuthorizationStatus
     private var deviceOrder: [String]
     private let queue = DispatchQueue(label: "inc.phone.cable.capture")
     private var discovery: AVCaptureDevice.DiscoverySession?
@@ -29,9 +30,11 @@ final class Capture: ObservableObject {
     private var subscriptions: [String: AnyCancellable] = [:]
     private var timer: DispatchSourceTimer?
 
-    init(android: AndroidCapture = AndroidCapture(), preferences: UserDefaults = .standard) {
+    init(android: AndroidCapture = AndroidCapture(), preferences: UserDefaults = .standard,
+         authorizationStatus: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) }) {
         self.android = android
         self.preferences = preferences
+        self.authorizationStatus = authorizationStatus
         deviceOrder = preferences.stringArray(forKey: "deviceOrder") ?? []
         android.onDevices = { [weak self] devices in
             self?.queue.async { self?.refreshAndroid(devices) }
@@ -48,7 +51,7 @@ final class Capture: ObservableObject {
         android.start()
         queue.async { [self] in
             guard discovery == nil else { return }
-            switch AVCaptureDevice.authorizationStatus(for: .video) {
+            switch authorizationStatus() {
             case .authorized:
                 break
             case .notDetermined:
@@ -114,9 +117,12 @@ final class Capture: ObservableObject {
         preferences.set(deviceOrder, forKey: "deviceOrder")
     }
 
-    func stop() {
-        android.stop()
-        queue.sync {
+    func stop(completion: @escaping () -> Void = {}) {
+        let stopped = DispatchGroup()
+        stopped.enter()
+        android.stop { stopped.leave() }
+        stopped.enter()
+        queue.async { [self] in
             timer?.cancel()
             timer = nil
             observers.forEach { NotificationCenter.default.removeObserver($0) }
@@ -128,7 +134,9 @@ final class Capture: ObservableObject {
             androidDevices.removeAll()
             subscriptions.removeAll()
             publishDevices()
+            stopped.leave()
         }
+        stopped.notify(queue: .main, execute: completion)
     }
 
     private func refreshIOS() {
@@ -205,7 +213,6 @@ final class Capture: ObservableObject {
             }
             self.devices = devices.sorted { self.deviceOrder.firstIndex(of: $0.id)! < self.deviceOrder.firstIndex(of: $1.id)! }
             self.preferences.set(self.deviceOrder, forKey: "deviceOrder")
-            if self.devices.isEmpty { self.state = .waiting }
         }
     }
 

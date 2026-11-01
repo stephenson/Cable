@@ -13,9 +13,9 @@ struct CableApp: App {
         Window("Cable", id: "viewer") {
             ContentView(capture: capture)
                 .preferredColorScheme(.dark)
-                .onAppear { capture.start() }
-                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-                    capture.stop()
+                .onAppear {
+                    delegate.capture = capture
+                    capture.start()
                 }
         }
         .defaultSize(width: 420, height: 700)
@@ -55,7 +55,15 @@ func showAboutCable() {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    weak var capture: Capture?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let capture else { return .terminateNow }
+        capture.stop { sender.reply(toApplicationShouldTerminate: true) }
+        return .terminateLater
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.activate(ignoringOtherApps: true)

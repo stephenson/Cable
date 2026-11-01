@@ -6,7 +6,8 @@ import AVFoundation
 struct WindowSizingTests {
     static func main() {
         _ = NSApplication.shared
-        let capture = Capture()
+        let offline = AndroidCapture(resources: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let capture = Capture(android: offline)
         let authorization = AVCaptureDevice.authorizationStatus(for: .video)
         capture.start()
         RunLoop.main.run(until: Date().addingTimeInterval(0.5))

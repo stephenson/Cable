@@ -127,5 +127,26 @@ struct AndroidVideoTests {
         let reset = DeviceCapture(id: named.id, name: "Pixel 9 Pro", modelID: "Android")
         precondition(named.displayName == "Pixel 9 Pro" && reset.displayName == "Pixel 9 Pro")
         print("PASS: local device names persist on reconnect, survive metadata updates, stay independent, and reset when cleared")
+
+        for permission in [AVAuthorizationStatus.notDetermined, .denied, .restricted] {
+            let offline = AndroidCapture(resources: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+            let setup = Capture(android: offline, preferences: preferences, authorizationStatus: { permission })
+            setup.start()
+            settle()
+            let expected: Capture.State = permission == .notDetermined ? .setup : .permission
+            precondition(setup.state == expected)
+            offline.onDevices?([firstSource])
+            settle()
+            precondition(setup.devices.count == 1)
+            offline.onDevices?([])
+            settle()
+            precondition(setup.devices.isEmpty && setup.state == expected, "Android disconnect must preserve unresolved iPhone access")
+            setup.retry()
+            settle()
+            precondition(setup.state == expected)
+            setup.stop()
+            settle()
+        }
+        print("PASS: Android disconnect preserves undetermined, denied, and restricted iPhone permission setup")
     }
 }

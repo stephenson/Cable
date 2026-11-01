@@ -40,7 +40,7 @@ for COMPONENT in XPCServices/Downloader.xpc XPCServices/Installer.xpc Autoupdate
 done
 codesign "${SIGN[@]}" "$FRAMEWORK"
 codesign "${SIGN[@]}" --entitlements "$TEMP/entitlements.plist" "$APP"
-bash "$ROOT/test.sh" "$APP"
+bash "$ROOT/test.sh" "$APP" "$OUT/.android-tools"
 if [[ -n "${NOTARY_PROFILE:-}" ]]; then
     ditto -c -k --keepParent "$APP" "$TEMP/Cable.zip"
     xcrun notarytool submit "$TEMP/Cable.zip" --keychain-profile "$NOTARY_PROFILE" --wait
