@@ -9,7 +9,11 @@ permissions:
 
 jobs:
   test:
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -24,8 +28,3 @@ jobs:
           PYTHON: ${{ steps.python.outputs.python-path }}
           NSUnbufferedIO: 'YES'
         run: bash build.sh
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: failure()
-        with:
-          name: device-wall
-          path: build/device-wall.png

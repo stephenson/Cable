@@ -4,29 +4,22 @@ import SwiftUI
 @testable import CableTests
 
 @main
-struct DeviceWallTests: App {
-    private let android: AndroidCapture
-    private let capture: Capture
-    private let suite = "CableWallTests.\(UUID().uuidString)"
-
-    init() {
-        android = AndroidCapture()
-        capture = Capture(android: android, preferences: UserDefaults(suiteName: suite)!)
-    }
-
-    var body: some Scene {
-        Window("Device wall test", id: "test") {
-            ContentView(capture: capture)
-                .task {
-                    await Self.runTests(android: android, capture: capture, suite: suite)
-                    NSApp.terminate(nil)
-                }
+struct DeviceWallTests {
+    static func main() {
+        NSApplication.shared.setActivationPolicy(.regular)
+        Task { @MainActor in
+            await runTests()
+            NSApp.terminate(nil)
         }
-        .defaultSize(width: 700, height: 700)
+        NSApp.run()
     }
 
-    @MainActor static func runTests(android: AndroidCapture, capture: Capture, suite: String) async {
-        defer { UserDefaults(suiteName: suite)!.removePersistentDomain(forName: suite) }
+    @MainActor static func runTests() async {
+        let android = AndroidCapture()
+        let suite = "CableWallTests.\(UUID().uuidString)"
+        let preferences = UserDefaults(suiteName: suite)!
+        defer { preferences.removePersistentDomain(forName: suite) }
+        let capture = Capture(android: android, preferences: preferences)
         let sources = [AndroidDevice(serial: "A", authorized: true, name: "First"),
                        AndroidDevice(serial: "B", authorized: true, name: "Second")]
         let portrait = sample(configuration: "AAAAAWdCwAvaGFbARAAAAwAEAAADAMo8UKqAAAAAAWjOD8g=", frame: "AAABZYiEOhGKAAIRccAAQDI4AAg0ycnJycnXXXXXXXXXXXXXXXXXXXXXXXXgAAABZQ+IhDoRigACEXHAAEAyOAAINMnJycnJ1111111111111111111111114A==")
@@ -38,7 +31,9 @@ struct DeviceWallTests: App {
         await settle()
         let first = capture.devices[0]
         let second = capture.devices[1]
-        let window = NSApp.windows.first { $0.styleMask.contains(.titled) }!
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: ContentView(capture: capture))
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         await settle()
@@ -48,22 +43,12 @@ struct DeviceWallTests: App {
         let originalName = first.customName
         defer { first.rename(to: originalName) }
         let point = NSPoint(x: window.contentLayoutRect.width / 4, y: 18)
-        let timestamp = ProcessInfo.processInfo.systemUptime
-        let down = NSEvent.mouseEvent(with: .leftMouseDown, location: point, modifierFlags: [], timestamp: timestamp, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
-        let up = NSEvent.mouseEvent(with: .leftMouseUp, location: point, modifierFlags: [], timestamp: timestamp + 0.1, windowNumber: window.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: 0)!
-        print("Rename test: active=\(NSApp.isActive), key=\(window.isKeyWindow), content=\(window.contentLayoutRect), point=\(point), hit=\(String(describing: window.contentView?.hitTest(point)))")
-        NSApp.postEvent(down, atStart: false)
+        let down = NSEvent.mouseEvent(with: .leftMouseDown, location: point, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
+        let up = NSEvent.mouseEvent(with: .leftMouseUp, location: point, modifierFlags: [], timestamp: 0.1, windowNumber: window.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: 0)!
         NSApp.postEvent(up, atStart: false)
-        for _ in 0..<20 {
-            if window.firstResponder is NSTextView { break }
-            await settle()
-        }
+        window.sendEvent(down)
         await settle()
         guard let editor = window.firstResponder as? NSTextView else {
-            let view = window.contentView!
-            let image = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-            view.cacheDisplay(in: view.bounds, to: image)
-            try! image.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/device-wall.png"))
             preconditionFailure("Clicking a device name must focus its text editor")
         }
         editor.selectAll(nil)
