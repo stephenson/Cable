@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key><string>Cable</string>
+    <key>CFBundleIdentifier</key><string>inc.phone.cable</string>
+    <key>CFBundleName</key><string>Cable</string>
+    <key>CFBundleDisplayName</key><string>Cable</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>1.2.1</string>
+    <key>CFBundleVersion</key><string>11</string>
+    <key>CFBundleIconFile</key><string>Cable</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key><string>inc.phone.cable.device</string>
+            <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+            <key>UTTypeDescription</key><string>Cable Device</string>
+        </dict>
+    </array>
+    <key>NSCameraUsageDescription</key><string>Cable uses capture-device access to show the screen of your USB-connected iPhone. Nothing is recorded.</string>
+    <key>NSMicrophoneUsageDescription</key><string>macOS may request access for the iPhone’s combined screen and audio capture device. Cable does not record or play audio.</string>
+</dict>
+</plist>
