@@ -54,6 +54,10 @@ struct DeviceWallTests {
         }
         await settle()
         guard let editor = window.firstResponder as? NSTextView else {
+            let view = window.contentView!
+            let image = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+            view.cacheDisplay(in: view.bounds, to: image)
+            try! image.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "build/device-wall.png"))
             preconditionFailure("Clicking a device name must focus its text editor")
         }
         editor.selectAll(nil)

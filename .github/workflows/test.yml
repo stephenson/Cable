@@ -24,3 +24,8 @@ jobs:
           PYTHON: ${{ steps.python.outputs.python-path }}
           NSUnbufferedIO: 'YES'
         run: bash build.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: failure()
+        with:
+          name: device-wall
+          path: build/device-wall.png
