@@ -33,7 +33,7 @@ struct DeviceWallTests {
         let second = capture.devices[1]
         let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 700, height: 700), styleMask: [.titled, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.contentViewController = NSHostingController(rootView: ContentView(capture: capture))
+        window.contentView = NSHostingView(rootView: ContentView(capture: capture))
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         await settle()
