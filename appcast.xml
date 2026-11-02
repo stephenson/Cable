@@ -3,12 +3,12 @@
     <channel>
         <title>Cable</title>
         <item>
-            <title>1.2.5</title>
-            <pubDate>Sun, 01 Nov 2026 14:27:45 +0000</pubDate>
-            <sparkle:version>1.2.5</sparkle:version>
-            <sparkle:shortVersionString>1.2.5</sparkle:shortVersionString>
+            <title>1.2.6</title>
+            <pubDate>Mon, 02 Nov 2026 11:14:04 +0000</pubDate>
+            <sparkle:version>1.2.6</sparkle:version>
+            <sparkle:shortVersionString>1.2.6</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/stephenson/Cable/releases/download/v1.2.5/Cable.zip" length="10447314" type="application/octet-stream" sparkle:edSignature="Hxx+7MCMTY4I5kVMaF2v/+zaH0y0BPahlM+pjo9gh5xzQznpGTfbdSjRCETTPkR5UkKndbnz78mC4g+Cwgc4BA=="/>
+            <enclosure url="https://github.com/stephenson/Cable/releases/download/v1.2.6/Cable.zip" length="10447438" type="application/octet-stream" sparkle:edSignature="EaHWlFptUuVrdyyrPDepnaoskgpThU7CRdWVSbjNA+Cft+/EiYBYrCzx2EV6eQKUcS3lwlo/EeuRyjvAkG7RAA=="/>
         </item>
     </channel>
 </rss>
