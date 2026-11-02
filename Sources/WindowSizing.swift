@@ -24,7 +24,11 @@ enum WindowSizing {
     static func fit(_ window: NSWindow, to canvas: CGSize?, preservingHeight: Bool = false) {
         guard !window.styleMask.contains(.fullScreen) else { return }
         window.styleMask.remove(.fullSizeContentView)
-        window.contentAspectRatio = canvas ?? .zero
+        if let canvas {
+            window.contentAspectRatio = canvas
+        } else {
+            window.contentResizeIncrements = CGSize(width: 1, height: 1)
+        }
         guard let screen = window.screen ?? NSScreen.main else { return }
         let available = screen.visibleFrame.insetBy(dx: 16, dy: 16)
         let availableContent = window.contentRect(forFrameRect: available).size

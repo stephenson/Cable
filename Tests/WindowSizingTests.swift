@@ -115,6 +115,16 @@ struct WindowSizingTests {
         settle()
         precondition(window.contentAspectRatio == .zero, "Disconnect left the window aspect locked")
         precondition(abs(contentSize().width - 420) < 2 && abs(contentSize().height - 700) < 2, "Disconnect did not restore the welcome size")
+        window.orderFront(nil)
+        for _ in 0..<20 {
+            window.setFrame(NSRect(x: 2200, y: 100, width: 2400, height: 1500), display: true)
+            settle()
+            let frame = window.frame
+            precondition([frame.minX, frame.minY, frame.width, frame.height].allSatisfy(\.isFinite), "Screen adjustment produced an invalid window frame")
+            WindowSizing.fit(window, to: nil)
+            precondition(abs(contentSize().width - 420) < 2 && abs(contentSize().height - 700) < 2, "Screen recovery did not restore the welcome size")
+        }
+        print("PASS: 20 disconnected-window off-screen resize and recovery cycles")
         window.close()
         print("PASS: single and multiple device sizing, rotation, manual resize, display bounds, Duo folding, and disconnect")
     }
